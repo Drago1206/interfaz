@@ -150,9 +150,12 @@ namespace CL_Covolco
                         if (Doccliente == "0")
                         {
                             dataGridView.Rows[i].Cells["Observacion"].Value = "ok";
-                            listaTablesRemesas[i] = FilasValidas;
 
-                            
+                              FilasValidas = ValidacionesTables.AsEnumerable()
+                             .Where(row => row.Field<string>("DocCliente") == "0")
+                             .CopyToDataTable();
+
+
                         }
                         else
                         {
@@ -177,78 +180,80 @@ namespace CL_Covolco
             }
         }
 
-        //public DataTable ActulizacionRemeas()
-        //{
-        //    DataTable actualizacionRem = new DataTable();
-        //    DataTable RemsasAct = new DataTable();
-        //    ConexionBD con = new ConexionBD();
-        //    List<Remesa> ListaRemesa = new List<Remesa>();
-        //    actualizacionRem = hojaExcel;
-        //    bool validacion = ValidarRemesas();
+        public DataTable ActulizacionRemeas()
+        {
+            DataTable actualizacionRem = new DataTable();
+            DataTable RemsasAct = new DataTable();
+            ConexionBD con = new ConexionBD();
+            List<Remesa> ListaRemesa = new List<Remesa>();
+            actualizacionRem = hojaExcel;
+            bool validacion = ValidarRemesas();
 
-        //    if (validacion)
-        //    {
-        //        try
-        //        {
-        //            clsConnSqlite sqlite = new clsConnSqlite();
-        //            SqlConnectionStringBuilder dbsyscom = sqlite.obtenerConexionSQLServer("dbSyscom");
-        //            con.setConnection(dbsyscom);
-        //            List<SqlParameter> Parametros = new List<SqlParameter>();
-
-        //            var remesasOrdenadas = actualizacionRem.AsEnumerable()
-        //            .OrderBy(row => row.Field<int>("NumeroRemesa"))
-        //            .ThenBy(row => row.Field<string>("Compania"))
-        //            .ToList();
-
-        //            foreach (var RemOrdenadas in remesasOrdenadas)
-        //            {
-
-        //                foreach (DataRow row in actualizacionRem.Rows)
-        //                {
-
-        //                    Remesa rem = new Remesa();
-        //                    {
-        //                        rem.DocCliente = row.Field<String>("DocumentoCliente");
-        //                    }
+            if (validacion)
+            {
+                try
+                {
+                    clsConnSqlite sqlite = new clsConnSqlite("");
+                    SqlConnectionStringBuilder dbsyscom = sqlite.obtenerConexionSQLServer("dbSyscom");
+                    ConexionBD con = new ConexionBD();
+                    con.setConnection(dbsyscom);
+                    List<SqlParameter> Parametros = new List<SqlParameter>();
 
 
-        //                }
-        //                //ListaRemesa.Add(rem)
-        //            }
-
-        //            Parametros.Add(new SqlParameter("DocCliente", ListaRemesa));
-        //            con.addParametersProc(Parametros);
-        //            con.ejecutarProcedimiento("spActualizarRemesa");
-        //            con.resetQuery();
-
-        //            Parametros.Clear();
-        //            con.setConnection(dbsyscom);
-        //            con.addParametersProc(Parametros);
-        //            con.ejecutarProcedimiento("SpValidarActualizacionRem");
-        //            RemsasAct = con.getDataTable();
-        //            if (RemsasAct.Rows.Count > 0)
-        //            {
-        //                actualizacionRem = RemsasAct;
-        //            }
-        //            else
-        //            {
-
-        //            }
-
-        //        }
-        //        catch (Exception e)
-        //        {
-
-        //        }
+                    if (FilasValidas.Rows.Count)
+                    {
+                        foreach (DataRow row in FilasValidas.Rows)
+                        {
+                            Parametros.Add(new SqlParameter("@DocCliente", row["DocCliente"].ToString));
+                            Parametros.Add(new SqlParameter("@NumOrden", row["Numero Orden"]));
+                            Parametros.Add(new SqlParameter("@IdCia", row["Compañia"]));
+                            con.addParametersProc(Parametros);
+                            con.ejecutarProcedimiento("spActualizarRemesa");
+                            con.resetQuery();
+                            Parametros.Clear();
 
 
-        //    }
+                            Parametros.Add(new SqlParameter("TipDoc", row["TipoDocumento"].ToString()));
+                            Parametros.Add(new SqlParameter("NumOrden", row["Numero Orden"]));
+                            Parametros.Add(new SqlParameter("IdCia", row["Compañia"]));
+                            con.addParametersProc(Parametros);
+                            con.ejecutarProcedimiento("SpConsultarRemesaTrn_TraMcias");
 
-        //    return actualizacionRem;
+                           
+                        }
+                        DataSet RemesasActualizadas = new DataSet();
+                        RemesasActualizadas.Tables[1] = con.getDataSet();
 
-        //}
+                        if (RemesasActualizadas.Rows.Count > 0)
+                        {
+                            actualizacionRem = RemesasActualizadas.Tables[1];
+                        }
+                        else
+                        {
+                            MessageBox.Show("No se encontraron las remesas actualizadas");
+                        }
 
-        
+
+                    }
+                    else
+                    {
+                        MessageBox.Show("Las remesas importadas del archivo excel no pasaron la validacion");
+                    }
+                   
+                }
+                catch (Exception e)
+                {
+                    MessageBox.Show(e.Message);
+                }
+
+
+            }
+
+            return actualizacionRem;
+
+        }
+
+
 
 
         private DataTable EliminarColumnas(DataTable dt, string columnaEspecifica)

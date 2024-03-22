@@ -98,7 +98,10 @@ namespace CL_Covolco
 
         private void BtnActualizar_Click(object sender, EventArgs e)
         {
-            
+            DataTable RemActualizadas = rem.ActulizacionRemeas();
+            Form2 form2 = new Form2();
+            form2.SetDataTable(RemActualizadas);
+
         }
     }
 
